@@ -2821,7 +2821,7 @@ class TestDataFrame(tm.TestCase, CheckIndexing,
         data = {'col1': range(10),
                 'col2': range(10)}
         cdf = CustomDataFrame(data)
-        
+
         # Did we get back our own DF class?
         self.assertTrue(isinstance(cdf, CustomDataFrame))
 
@@ -2833,7 +2833,7 @@ class TestDataFrame(tm.TestCase, CheckIndexing,
         # Do we get back our own DF class after slicing row-wise?
         cdf_rows = cdf[1:5]
         self.assertTrue(isinstance(cdf_rows, CustomDataFrame))
-        self.assertEqual(cdf_rows.custom_frame_function(), 'OK')        
+        self.assertEqual(cdf_rows.custom_frame_function(), 'OK')
 
         # Make sure sliced part of multi-index frame is custom class
         mcol = pd.MultiIndex.from_tuples([('A', 'A'), ('A', 'B')])
@@ -5128,6 +5128,17 @@ class TestDataFrame(tm.TestCase, CheckIndexing,
 
         df = DataFrame({'a': ['a', None, 'b']})
         assert_frame_equal(df + df, DataFrame({'a': ['aa', np.nan, 'bb']}))
+
+        # Test for issue #10181
+        for dtype in ('float', 'int64'):
+            frames = [
+                DataFrame(dtype=dtype),
+                DataFrame(columns=['A'], dtype=dtype),
+                DataFrame(index=[0], dtype=dtype),
+            ]
+            for df in frames:
+                self.assertTrue((df + df).equals(df))
+                assert_frame_equal(df + df, df)
 
     def test_ops_np_scalar(self):
         vals, xs = np.random.rand(5, 3), [nan, 7, -23, 2.718, -3.14, np.inf]

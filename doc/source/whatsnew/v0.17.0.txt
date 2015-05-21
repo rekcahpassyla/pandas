@@ -38,6 +38,9 @@ Backwards incompatible API changes
 Other API Changes
 ^^^^^^^^^^^^^^^^^
 
+- Adding empty ``DataFrame``s results in a ``DataFrame`` that ``.equals`` an empty ``DataFrame`` (:issue:`10181`)
+
+
 .. _whatsnew_0170.deprecations:
 
 Deprecations
