@@ -569,7 +569,6 @@ class TestSeries(tm.TestCase, CheckNameIntegration):
 
         self.ts = _ts.copy()
         self.ts.name = 'ts'
-
         self.series = tm.makeStringSeries()
         self.series.name = 'series'
 
@@ -1361,10 +1360,11 @@ class TestSeries(tm.TestCase, CheckNameIntegration):
         self.assertTrue(tm.equalContents(numSliceEnd,
                                          np.array(self.series)[-10:]))
 
-        # test return view
-        sl = self.series[10:20]
-        sl[:] = 0
-        self.assertTrue((self.series[10:20] == 0).all())
+        with pd.option_context('chained_assignment', 'warn'):
+            # test return view
+            sl = self.series[10:20]
+            sl[:] = 0
+            self.assertTrue((self.series[10:20] == 0).all())
 
     def test_slice_can_reorder_not_uniquely_indexed(self):
         s = Series(1, index=['a', 'a', 'b', 'b', 'c'])
@@ -1418,6 +1418,8 @@ class TestSeries(tm.TestCase, CheckNameIntegration):
         tm.assert_frame_equal(result, expected)
 
     def test_setitem(self):
+        import warnings
+
         self.ts[self.ts.index[5]] = np.NaN
         self.ts[[1, 2, 17]] = np.NaN
         self.ts[6] = np.NaN
@@ -1445,9 +1447,23 @@ class TestSeries(tm.TestCase, CheckNameIntegration):
         expected = pd.TimeSeries(47, [pd.datetime(2012, 1, 1)])
         assert_series_equal(series, expected)
 
-        series = pd.TimeSeries(0, pd.date_range('2011-01-01', '2011-01-01'))[:0]
-        series[pd.datetime(2012, 1, 1)] = 47
-        assert_series_equal(series, expected)
+        series = pd.TimeSeries(0, pd.date_range('2011-01-01', '2011-01-01'))
+        series2 = series[:0]
+
+        def f():
+            series2[pd.datetime(2012, 1, 1)] = 47
+
+        with pd.option_context('chained_assignment', 'raise'):
+            self.assertRaises(com.SettingWithCopyError, f)
+
+        with pd.option_context('chained_assignment', 'warn'):
+            f()
+            assert_series_equal(series2, expected)
+            # also check that series is not changed.
+            assert_series_equal(
+                series, 
+                pd.TimeSeries(0, pd.date_range('2011-01-01', '2011-01-01'))
+            )
 
     def test_setitem_dtypes(self):
 
@@ -4826,8 +4842,10 @@ class TestSeries(tm.TestCase, CheckNameIntegration):
         tm._skip_if_no_scipy()
         from scipy.stats import rankdata
 
+        pd.set_option('chained_assignment',None)
         self.ts[::2] = np.nan
         self.ts[:10][::3] = 4.
+        pd.set_option('chained_assignment','raise')
 
         ranks = self.ts.rank()
         oranks = self.ts.astype('O').rank()
