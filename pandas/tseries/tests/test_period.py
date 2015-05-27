@@ -1669,7 +1669,10 @@ class TestPeriodIndex(tm.TestCase):
         result = ts[2007]
         expected = ts[1:3]
         assert_series_equal(result, expected)
+        pd.set_option('chained_assignment', None)
         result[:] = 1
+        pd.set_option('chained_assignment', 'raise')
+
         self.assertTrue((ts[1:3] == 1).all())
 
         # not monotonic
