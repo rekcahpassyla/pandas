@@ -794,6 +794,19 @@ class CheckIndexing(object):
         result.loc[result.b.isnull(), 'a'] = result.a
         assert_frame_equal(result, df)
 
+    def test_setitem_empty_frame_with_boolean(self):
+        # Test for issue #10126
+
+        for dtype in ('float', 'int64'):
+            for df in [
+                    pd.DataFrame(dtype=dtype),
+                    pd.DataFrame(dtype=dtype, index=[1]),
+                    pd.DataFrame(dtype=dtype, columns=['A']),
+            ]:
+                df2 = df.copy()
+                df[df > df2] = 47
+                assert_frame_equal(df, df2)
+
     def test_delitem_corner(self):
         f = self.frame.copy()
         del f['D']
